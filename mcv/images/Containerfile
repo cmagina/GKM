@@ -68,9 +68,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-wheel \
  && rm -rf /var/lib/apt/lists/*
 
+# vfs avoids nested overlay-on-overlay (podman/docker rootfs is often already
+# fuse-overlayfs), which otherwise yields read-only working mounts and:
+#   mkdir /io.triton.manifest: operation not permitted
+# For faster overlay storage, mount a volume on /var/lib/containers and override
+# /etc/containers/storage.conf to use driver=overlay + fuse-overlayfs.
 RUN mkdir -p /etc/containers && \
- printf '[storage]\ndriver="overlay"\nrunroot="/run/containers/storage"\ngraphroot="/var/lib/containers/storage"\n[storage.options]\nmount_program="/usr/bin/fuse-overlayfs"\n' \
+ printf '[storage]\ndriver="vfs"\nrunroot="/run/containers/storage"\ngraphroot="/var/lib/containers/storage"\n' \
    > /etc/containers/storage.conf
+
+VOLUME /var/lib/containers
 
 COPY --from=builder /usr/src/mcv/_output/bin/linux_${TARGETARCH}/mcv /mcv
 COPY mcv/images/entrypoint.sh /entrypoint.sh
@@ -161,9 +168,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-wheel \
  && rm -rf /var/lib/apt/lists/*
 
+# vfs: see mcv-minimal storage.conf comment (nested overlay EPERM).
 RUN mkdir -p /etc/containers && \
- printf '[storage]\ndriver="overlay"\nrunroot="/run/containers/storage"\ngraphroot="/var/lib/containers/storage"\n[storage.options]\nmount_program="/usr/bin/fuse-overlayfs"\n' \
+ printf '[storage]\ndriver="vfs"\nrunroot="/run/containers/storage"\ngraphroot="/var/lib/containers/storage"\n' \
    > /etc/containers/storage.conf
+
+VOLUME /var/lib/containers
 
 COPY --from=builder /usr/src/mcv/_output/bin/linux_${TARGETARCH}/mcv /mcv
 COPY mcv/images/entrypoint.sh /entrypoint.sh
@@ -230,10 +240,12 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     rm -rf /var/lib/apt/lists/* /tmp/amdgpu-install.deb; \
 fi
 
-# Configure container storage
+# vfs: see mcv-minimal storage.conf comment (nested overlay EPERM).
 RUN mkdir -p /etc/containers && \
- printf '[storage]\ndriver="overlay"\nrunroot="/run/containers/storage"\ngraphroot="/var/lib/containers/storage"\n[storage.options]\nmount_program="/usr/bin/fuse-overlayfs"\n' \
+ printf '[storage]\ndriver="vfs"\nrunroot="/run/containers/storage"\ngraphroot="/var/lib/containers/storage"\n' \
    > /etc/containers/storage.conf
+
+VOLUME /var/lib/containers
 
 COPY --from=builder /usr/src/mcv/_output/bin/linux_${TARGETARCH}/mcv /mcv
 COPY mcv/images/entrypoint.sh /entrypoint.sh

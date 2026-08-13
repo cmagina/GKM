@@ -552,9 +552,17 @@ To use docker on the host with an MCV image, you need to mount the cache
 directory to the container and run the following command:
 
 ```bash
+# On Fedora, `docker` is often Podman. Nested overlay then fails with
+# "mkdir /io.triton.manifest: operation not permitted". Newer mcv images use
+# vfs storage; for older images, override storage.conf as below (or mount a
+# volume on /var/lib/containers). Remove any existing .tar first — docker-archive
+# cannot overwrite.
 docker run --rm -it --privileged \
   -v <path-to-cache>/example:/example \
   quay.io/gkm/mcv bash -lc '
+    printf "[storage]\ndriver=\"vfs\"\nrunroot=\"/run/containers/storage\"\ngraphroot=\"/var/lib/containers/storage\"\n" \
+      > /etc/containers/storage.conf
+    rm -f /example/vector-add-cache-rocm.tar
     /mcv -c -i quay.io/gkm/vector-add-cache:rocm \
         -d /example/vector-add-cache-rocm --no-gpu &&
     buildah push containers-storage:quay.io/gkm/vector-add-cache:rocm \
