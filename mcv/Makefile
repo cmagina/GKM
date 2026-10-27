@@ -26,10 +26,6 @@ SRC_ROOT           := $(shell pwd)
 ARCH               := $(shell arch)
 OUTPUT_DIR         := _output
 BUILD_BINDIR := $(OUTPUT_DIR)/bin
-GIT_VERSION        := $(shell git describe --dirty --tags --always --match='v*')
-GIT_SHA            := $(shell git rev-parse HEAD)
-GIT_BRANCH         := $(shell git rev-parse --abbrev-ref HEAD)
-VERSION            := $(GIT_VERSION)
 
 
 # set GOENV
@@ -39,13 +35,8 @@ GOARCH := $(shell go env GOARCH)
 GOENV = GO111MODULE="" \
 				GOOS=$(GOOS) \
 				GOARCH=$(GOARCH)
-PKG_BUILD="github.com/redhat-et/GKM/mcv/pkg/build"
-LDFLAGS := $(LDFLAGS) \
-		-X $(PKG_BUILD).Version=$(VERSION) \
-		-X $(PKG_BUILD).Revision=$(GIT_SHA) \
-		-X $(PKG_BUILD).Branch=$(GIT_BRANCH) \
-		-X $(PKG_BUILD).OS=$(GOOS) \
-		-X $(PKG_BUILD).Arch=$(GOARCH)
+# Optional externally supplied linker flags (e.g. make build LDFLAGS="-X ...").
+LDFLAGS ?=
 
 GO_BUILD_TAGS := '$(GOOS)'
 
